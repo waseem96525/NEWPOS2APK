@@ -181,6 +181,10 @@ let editingSaleIndex = -1;
 let deferredPrompt;
 let installButton;
 
+// Split payment variables
+let currentSplitPayments = [];
+let isSplitPaymentMode = false;
+
 // DOM elements
 const sections = document.querySelectorAll('.section');
 const inventoryTable = document.getElementById('inventoryTable').querySelector('tbody');
@@ -210,6 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize notifications
     requestNotificationPermission();
     startNotifications();
+
+    // Initialize category filter
+    updateCategoryFilter();
+
+    // POS Shortcut Key
+    document.addEventListener('keydown', handlePOSShortcut);
 
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
@@ -253,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search functionality
     document.getElementById('itemSearch').addEventListener('input', filterItems);
     document.getElementById('inventorySearch').addEventListener('input', filterInventory);
-    document.getElementById('categoryFilter').addEventListener('change', filterInventory);
+    document.getElementById('categoryFilter').addEventListener('change', filterItems);
     document.getElementById('barcodeInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') scanBarcode();
     });
@@ -304,8 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await signupUser(email, password);
     });
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', handleKeyboardShortcuts);
+
 
     // Theme and audit listeners
     document.getElementById('auditFilter').addEventListener('change', (e) => {
@@ -544,19 +553,29 @@ function updateInventoryStats() {
 }
 
 // POS functionality
-function renderItemGrid() {
+function renderItemGrid(filteredItems = items) {
     itemGrid.innerHTML = '';
-    items.forEach((item) => {
+    filteredItems.forEach((item) => {
         const itemCard = document.createElement('div');
         itemCard.className = 'item-card';
+        const stockStatus = item.quantity === 0 ? 'out-of-stock' :
+                           item.quantity <= item.minStock ? 'low-stock' : 'in-stock';
+        const stockColor = stockStatus === 'out-of-stock' ? '#dc3545' :
+                          stockStatus === 'low-stock' ? '#ffc107' : '#28a745';
+
         itemCard.innerHTML = `
             <h4>${item.name}</h4>
             <p>₹${item.sellingPrice.toFixed(2)}</p>
-            <p>Stock: ${item.quantity}</p>
-            <button onclick="addToCart(${item.id})" ${item.quantity === 0 ? 'disabled' : ''}>Add to Cart</button>
+            <p class="stock-info" style="color: ${stockColor}">Stock: ${item.quantity}</p>
+            <button onclick="addToCart(${item.id})" ${item.quantity === 0 ? 'disabled' : ''}>
+                ${item.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+            </button>
         `;
         itemGrid.appendChild(itemCard);
     });
+
+    // Update product count
+    document.getElementById('productCount').textContent = filteredItems.length;
 }
 
 async function addToCart(id) {
@@ -578,24 +597,41 @@ async function addToCart(id) {
 function updateCart() {
     cartList.innerHTML = '';
     let subtotal = 0;
-    cart.forEach((cartItem, cartIndex) => {
-        const item = items.find(i => i.id === cartItem.id);
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <div>
-                <strong>${item.name}</strong><br>
-                ₹${cartItem.price.toFixed(2)} x ${cartItem.quantity}
-            </div>
-            <div>
-                ₹${(cartItem.price * cartItem.quantity).toFixed(2)}
-                <button onclick="changeQuantity(${cartIndex}, -1)">-</button>
-                <button onclick="changeQuantity(${cartIndex}, 1)">+</button>
-                <button onclick="removeFromCart(${cartIndex})">×</button>
+
+    if (cart.length === 0) {
+        cartList.innerHTML = `
+            <div class="empty-cart">
+                <span class="empty-cart-icon">🛒</span>
+                <p>Your cart is empty</p>
+                <small>Add products to get started</small>
             </div>
         `;
-        cartList.appendChild(li);
-        subtotal += cartItem.price * cartItem.quantity;
-    });
+    } else {
+        cart.forEach((cartItem, cartIndex) => {
+            const item = items.find(i => i.id === cartItem.id);
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-details">₹${cartItem.price.toFixed(2)} each</div>
+                </div>
+                <div class="item-controls">
+                    <div class="quantity-controls">
+                        <button class="qty-btn" onclick="changeQuantity(${cartIndex}, -1)">−</button>
+                        <span class="quantity">${cartItem.quantity}</span>
+                        <button class="qty-btn" onclick="changeQuantity(${cartIndex}, 1)">+</button>
+                    </div>
+                    <div class="item-total">₹${(cartItem.price * cartItem.quantity).toFixed(2)}</div>
+                    <button class="remove-btn" onclick="removeFromCart(${cartIndex})">×</button>
+                </div>
+            `;
+            cartList.appendChild(li);
+            subtotal += cartItem.price * cartItem.quantity;
+        });
+    }
+
+    // Update cart count
+    document.getElementById('cartItemCount').textContent = cart.length;
 
     const discountAmount = discountType === 'percentage' ? (subtotal * discount / 100) : discount;
     const discountedTotal = subtotal - discountAmount;
@@ -744,23 +780,53 @@ function checkout() {
     const taxAmount = parseFloat(document.getElementById('taxAmount').textContent);
     const total = parseFloat(cartTotal.textContent);
 
+    // Initialize split payment state
+    currentSplitPayments = [];
+    isSplitPaymentMode = false;
+    updatePaymentSummary(total);
+
     // Open payment modal
     document.getElementById('paymentModal').style.display = 'block';
     document.getElementById('paymentTotal').textContent = total.toFixed(2);
     document.getElementById('paidAmount').textContent = '0.00';
+    document.getElementById('remainingAmount').textContent = total.toFixed(2);
     document.getElementById('changeAmount').textContent = '0.00';
+
+    // Reset payment UI
+    document.getElementById('splitPayments').style.display = 'none';
+    document.getElementById('paymentBreakdown').innerHTML = '';
 }
 
 function selectPaymentMethod(method) {
-    // For simplicity, assume full payment
-    const total = parseFloat(document.getElementById('paymentTotal').textContent);
-    document.getElementById('paidAmount').textContent = total.toFixed(2);
-    document.getElementById('changeAmount').textContent = '0.00';
-    processPayment(method);
+    if (method === 'split') {
+        // Enter split payment mode
+        isSplitPaymentMode = true;
+        document.getElementById('splitPayments').style.display = 'block';
+        document.getElementById('paymentAmount').focus();
+        return;
+    }
+
+    // For single payment methods (when not in split mode)
+    if (!isSplitPaymentMode) {
+        const total = parseFloat(document.getElementById('paymentTotal').textContent);
+        document.getElementById('paidAmount').textContent = total.toFixed(2);
+        document.getElementById('remainingAmount').textContent = '0.00';
+        document.getElementById('changeAmount').textContent = '0.00';
+        processPayment(method);
+    }
 }
 
 async function processPayment(method) {
     const total = parseFloat(cartTotal.textContent);
+
+    // Prepare payment method data
+    let paymentMethod;
+    if (method === 'split') {
+        paymentMethod = currentSplitPayments;
+    } else {
+        paymentMethod = method;
+    }
+
     const sale = {
         id: Date.now(),
         orderNumber: currentOrderNumber,
@@ -780,7 +846,7 @@ async function processPayment(method) {
         gstRate: gstEnabled ? gstRate : 0,
         tax: parseFloat(document.getElementById('taxAmount').textContent),
         total: total,
-        paymentMethod: method,
+        paymentMethod: paymentMethod,
         status: 'paid'
     };
     sales.push(sale);
@@ -796,6 +862,10 @@ async function processPayment(method) {
     renderItemGrid(); // Update item grid to show reduced stock
     await logAudit('sale', `Sale completed: Order #${sale.orderNumber}, Total: ₹${sale.total.toFixed(2)}`);
     alert('Sale completed!');
+
+    // Reset split payment state
+    currentSplitPayments = [];
+    isSplitPaymentMode = false;
 }
 
 function printReceipt(sale) {
@@ -812,6 +882,16 @@ function printReceipt(sale) {
         <hr style="border: none; border-top: 1px solid #000; margin: 10px 0;">
     ` : '';
 
+    // Format payment method display
+    let paymentDisplay = '';
+    if (Array.isArray(sale.paymentMethod)) {
+        paymentDisplay = sale.paymentMethod.map(payment =>
+            `${payment.method.toUpperCase()}: ₹${payment.amount.toFixed(2)}`
+        ).join('<br>');
+    } else {
+        paymentDisplay = sale.paymentMethod.toUpperCase();
+    }
+
     const receiptHTML = `
         <div style="font-family: Arial, sans-serif; text-align: center; max-width: 300px; margin: 0 auto;">
             ${shopHeader}
@@ -826,7 +906,7 @@ function printReceipt(sale) {
             <div style="display: flex; justify-content: space-between;"><span>GST (${sale.gstRate}%):</span><span>₹${sale.tax.toFixed(2)}</span></div>
             <div style="border-top: 1px solid #000; padding-top: 5px; font-weight: bold; display: flex; justify-content: space-between;"><span>Total:</span><span>₹${sale.total.toFixed(2)}</span></div>
             <br>
-            <div>Payment: ${sale.paymentMethod}</div>
+            <div>Payment:<br>${paymentDisplay}</div>
             <br>
             <div style="font-size: 12px;">Thank you for your business!</div>
         </div>
@@ -867,6 +947,21 @@ function scanBarcode() {
             alert('Item not found!');
         }
     }
+}
+
+function filterItems() {
+    const searchQuery = document.getElementById('itemSearch').value.toLowerCase();
+    const categoryFilter = document.getElementById('categoryFilter').value;
+
+    let filteredItems = items.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery) ||
+                             item.sku.toLowerCase().includes(searchQuery) ||
+                             (item.barcode && item.barcode.includes(searchQuery));
+        const matchesCategory = !categoryFilter || item.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+    });
+
+    renderItemGrid(filteredItems);
 }
 
 function filterCustomers() {
@@ -980,6 +1075,17 @@ async function saveEditedSale() {
 
 function viewInvoice(index) {
     const sale = sales[index];
+
+    // Format payment method display
+    let paymentDisplay = '';
+    if (Array.isArray(sale.paymentMethod)) {
+        paymentDisplay = sale.paymentMethod.map(payment =>
+            `${payment.method.toUpperCase()}: ₹${payment.amount.toFixed(2)}`
+        ).join(', ');
+    } else {
+        paymentDisplay = sale.paymentMethod.toUpperCase();
+    }
+
     const invoiceHTML = `
         <div style="font-family: Arial, sans-serif;">
             <div><strong>Invoice ID:</strong> ${sale.id}</div>
@@ -994,7 +1100,7 @@ function viewInvoice(index) {
             <div><strong>Discount:</strong> ₹${sale.discount.toFixed(2)}</div>
             <div><strong>GST (${sale.gstRate}%):</strong> ₹${sale.tax.toFixed(2)}</div>
             <div><strong>Total:</strong> ₹${sale.total.toFixed(2)}</div>
-            <div><strong>Payment:</strong> ${sale.paymentMethod}</div>
+            <div><strong>Payment:</strong> ${paymentDisplay}</div>
         </div>
     `;
     document.getElementById('invoiceContent').innerHTML = invoiceHTML;
@@ -1003,6 +1109,17 @@ function viewInvoice(index) {
 
 function printInvoice(index) {
     const sale = sales[index];
+
+    // Format payment method display
+    let paymentDisplay = '';
+    if (Array.isArray(sale.paymentMethod)) {
+        paymentDisplay = sale.paymentMethod.map(payment =>
+            `${payment.method.toUpperCase()}: ₹${payment.amount.toFixed(2)}`
+        ).join('<br>');
+    } else {
+        paymentDisplay = sale.paymentMethod.toUpperCase();
+    }
+
     const shopHeader = shopSettings.name ? `
         <div style="text-align: center; margin-bottom: 10px;">
             ${shopSettings.logo ? `<img src="${shopSettings.logo}" style="max-width: 150px; max-height: 75px;"><br>` : ''}
@@ -1034,7 +1151,7 @@ function printInvoice(index) {
                 <strong>Discount:</strong> ₹${sale.discount.toFixed(2)}<br>
                 <strong>GST (${sale.gstRate}%):</strong> ₹${sale.tax.toFixed(2)}<br>
                 <strong>Total:</strong> ₹${sale.total.toFixed(2)}<br>
-                <strong>Payment:</strong> ${sale.paymentMethod}
+                <strong>Payment:</strong><br>${paymentDisplay}
             </div>
         </div>
     `;
@@ -1065,6 +1182,16 @@ function printAllInvoices() {
 
     let allInvoicesHTML = `<html><head><title>All Invoices</title></head><body>${shopHeader}`;
     sales.forEach((sale, index) => {
+        // Format payment method display
+        let paymentDisplay = '';
+        if (Array.isArray(sale.paymentMethod)) {
+            paymentDisplay = sale.paymentMethod.map(payment =>
+                `${payment.method.toUpperCase()}: ₹${payment.amount.toFixed(2)}`
+            ).join('<br>');
+        } else {
+            paymentDisplay = sale.paymentMethod.toUpperCase();
+        }
+
         allInvoicesHTML += `
             <div style="page-break-after: always; font-family: Arial, sans-serif; max-width: 400px; margin: 0 auto;">
                 <div style="text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px;">Invoice #${sale.id}</div>
@@ -1082,7 +1209,7 @@ function printAllInvoices() {
                     <strong>Discount:</strong> ₹${sale.discount.toFixed(2)}<br>
                     <strong>GST (${sale.gstRate}%):</strong> ₹${sale.tax.toFixed(2)}<br>
                     <strong>Total:</strong> ₹${sale.total.toFixed(2)}<br>
-                    <strong>Payment:</strong> ${sale.paymentMethod}
+                    <strong>Payment:</strong><br>${paymentDisplay}
                 </div>
             </div>
         `;
@@ -1660,82 +1787,19 @@ function loadTheme() {
     document.getElementById('themeSelect').value = theme;
 }
 
-// Keyboard Shortcuts
-function handleKeyboardShortcuts(event) {
-    // Prevent shortcuts when typing in inputs
+
+
+// POS Shortcut Key
+function handlePOSShortcut(event) {
+    // Prevent shortcut when typing in inputs
     if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.tagName === 'SELECT') {
         return;
     }
 
-    switch (event.key) {
-        case 'F1':
-            event.preventDefault();
-            showSection('dashboard');
-            logAudit('keyboard_shortcut', 'F1: Dashboard');
-            break;
-        case 'F2':
-            event.preventDefault();
-            showSection('inventory');
-            logAudit('keyboard_shortcut', 'F2: Inventory');
-            break;
-        case 'F3':
-            event.preventDefault();
-            showSection('pos');
-            logAudit('keyboard_shortcut', 'F3: POS');
-            break;
-        case 'F4':
-            event.preventDefault();
-            showSection('billing');
-            logAudit('keyboard_shortcut', 'F4: Billing');
-            break;
-        case 'F5':
-            event.preventDefault();
-            showSection('purchase');
-            logAudit('keyboard_shortcut', 'F5: Purchase');
-            break;
-        case 'F6':
-            event.preventDefault();
-            showSection('reports');
-            logAudit('keyboard_shortcut', 'F6: Reports');
-            break;
-        case 'F7':
-            event.preventDefault();
-            showSection('audit');
-            logAudit('keyboard_shortcut', 'F7: Audit');
-            break;
-        case 'F8':
-            event.preventDefault();
-            showSettings();
-            logAudit('keyboard_shortcut', 'F8: Settings');
-            break;
-        case 'F9':
-            event.preventDefault();
-            clearCart();
-            logAudit('keyboard_shortcut', 'F9: Clear Cart');
-            break;
-        case 'F10':
-            event.preventDefault();
-            checkout();
-            logAudit('keyboard_shortcut', 'F10: Checkout');
-            break;
-        case 'F11':
-            event.preventDefault();
-            generateBarcodes();
-            logAudit('keyboard_shortcut', 'F11: Barcodes');
-            break;
-        case 'F12':
-            event.preventDefault();
-            exportData();
-            logAudit('keyboard_shortcut', 'F12: Export Data');
-            break;
-    }
-
-    // Number pad for quantity (if cart item is selected)
-    if (event.key >= '0' && event.key <= '9' && event.location === KeyboardEvent.DOM_KEY_LOCATION_NUMPAD) {
+    // Only F3 for POS navigation
+    if (event.key === 'F3') {
         event.preventDefault();
-        const quantity = parseInt(event.key);
-        // This would need more context - for now, just log
-        logAudit('keyboard_shortcut', `Numpad ${quantity}: Quantity input`);
+        showSection('pos');
     }
 }
 
@@ -2282,6 +2346,96 @@ function changeInvoiceStatus(index) {
         saveData();
         renderInvoiceTable();
     }
+}
+
+// Split payment functions
+function addPaymentMethod() {
+    const amountInput = document.getElementById('paymentAmount');
+    const amount = parseFloat(amountInput.value);
+
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+    }
+
+    const total = parseFloat(document.getElementById('paymentTotal').textContent);
+    const currentPaid = currentSplitPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const remaining = total - currentPaid;
+
+    if (amount > remaining) {
+        alert(`Amount cannot exceed remaining balance of ₹${remaining.toFixed(2)}`);
+        return;
+    }
+
+    // For split payment, we need to select a payment method
+    const method = prompt('Select payment method (cash/card/upi):');
+    if (!method || !['cash', 'card', 'upi'].includes(method.toLowerCase())) {
+        alert('Please select a valid payment method');
+        return;
+    }
+
+    // Add payment to split payments
+    currentSplitPayments.push({
+        method: method.toLowerCase(),
+        amount: amount
+    });
+
+    // Update UI
+    updatePaymentSummary(total);
+    updatePaymentBreakdown();
+    amountInput.value = '';
+
+    // Check if payment is complete
+    const newPaid = currentSplitPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    if (newPaid >= total) {
+        setTimeout(() => {
+            completeSplitPayment();
+        }, 500);
+    }
+}
+
+function updatePaymentSummary(total) {
+    const paid = currentSplitPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const remaining = Math.max(0, total - paid);
+
+    document.getElementById('paidAmount').textContent = paid.toFixed(2);
+    document.getElementById('remainingAmount').textContent = remaining.toFixed(2);
+    document.getElementById('changeAmount').textContent = '0.00';
+}
+
+function updatePaymentBreakdown() {
+    const breakdown = document.getElementById('paymentBreakdown');
+    breakdown.innerHTML = '';
+
+    currentSplitPayments.forEach((payment, index) => {
+        const paymentDiv = document.createElement('div');
+        paymentDiv.className = 'payment-breakdown-item';
+        paymentDiv.innerHTML = `
+            <span>${payment.method.toUpperCase()}: ₹${payment.amount.toFixed(2)}</span>
+            <button onclick="removePaymentMethod(${index})" class="remove-payment">×</button>
+        `;
+        breakdown.appendChild(paymentDiv);
+    });
+}
+
+function removePaymentMethod(index) {
+    currentSplitPayments.splice(index, 1);
+    const total = parseFloat(document.getElementById('paymentTotal').textContent);
+    updatePaymentSummary(total);
+    updatePaymentBreakdown();
+}
+
+function completeSplitPayment() {
+    const total = parseFloat(document.getElementById('paymentTotal').textContent);
+    const paid = currentSplitPayments.reduce((sum, payment) => sum + payment.amount, 0);
+
+    if (paid < total) {
+        alert('Payment incomplete. Please add more payments.');
+        return;
+    }
+
+    // Process the split payment
+    processPayment('split');
 }
 
 // PWA Install function

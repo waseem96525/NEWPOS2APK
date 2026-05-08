@@ -7,6 +7,7 @@
     <meta name="description" content="Complete Point of Sale and Inventory Management System with offline support">
     <meta name="theme-color" content="#667eea">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="apple-touch-icon" href="icon-192.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -102,63 +103,133 @@
         </section>
 
         <section id="pos" class="section">
-            <h2>Point of Sale</h2>
-            <div class="pos-header">
-                <div class="customer-info">
-                    <span id="customerName">Walk-in Customer</span>
-                    <button onclick="selectCustomer()">Change Customer</button>
+            <!-- POS Header -->
+            <div class="pos-header-modern">
+                <div class="pos-title-section">
+                    <h2>🛒 Point of Sale</h2>
+                    <div class="order-badge">Order #<span id="orderNumber">001</span></div>
                 </div>
-                <div class="order-info">
-                    <span>Order #<span id="orderNumber">001</span></span>
-                    <button onclick="holdOrder()">Hold Order</button>
-                    <button onclick="recallOrder()">Recall Order</button>
+                <div class="pos-actions">
+                    <button onclick="holdOrder()" class="action-btn secondary">
+                        <span>⏸️</span> Hold
+                    </button>
+                    <button onclick="recallOrder()" class="action-btn secondary">
+                        <span>▶️</span> Recall
+                    </button>
                 </div>
             </div>
-            <div class="pos-container">
-                <div class="item-list">
-                    <div class="item-controls">
-                        <input type="text" id="itemSearch" placeholder="Search items...">
-                        <input type="text" id="barcodeInput" placeholder="Scan barcode...">
-                        <button onclick="scanBarcode()">Scan</button>
-                    </div>
-                    <div id="itemGrid"></div>
+
+            <!-- Customer Info Bar -->
+            <div class="customer-bar">
+                <div class="customer-display">
+                    <span class="customer-icon">👤</span>
+                    <span id="customerName">Walk-in Customer</span>
                 </div>
-                <div class="cart">
-                    <h3>Cart</h3>
-                    <div class="tax-controls">
-                        <label>
-                            <input type="checkbox" id="gstEnabled" checked> Enable GST
-                        </label>
-                        <label>
-                            GST Rate: <span id="gstRateValue">18</span>%
-                            <input type="range" id="gstRate" min="0" max="30" value="18">
-                        </label>
-                    </div>
-                    <div class="cart-items">
-                        <ul id="cartList"></ul>
-                    </div>
-                    <div class="cart-summary">
-                        <div class="summary-row">
-                            <span>Subtotal:</span>
-                            <span>₹<span id="subtotal">0.00</span></span>
+                <button onclick="selectCustomer()" class="change-customer-btn">
+                    <span>🔄</span> Change Customer
+                </button>
+            </div>
+
+            <!-- Main POS Layout -->
+            <div class="pos-layout">
+                <!-- Left Panel - Product Catalog -->
+                <div class="pos-left-panel">
+                    <div class="search-section">
+                        <div class="search-inputs">
+                            <div class="search-group">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="itemSearch" placeholder="Search products...">
+                            </div>
+                            <div class="search-group">
+                                <span class="barcode-icon">📱</span>
+                                <input type="text" id="barcodeInput" placeholder="Scan barcode...">
+                                <button onclick="scanBarcode()" class="scan-btn">Scan</button>
+                            </div>
                         </div>
-                        <div class="summary-row">
-                            <span>Discount:</span>
-                            <span>-₹<span id="discountAmount">0.00</span></span>
-                        </div>
-                        <div class="summary-row" id="taxRow">
-                            <span>Tax (GST <span id="gstPercent">18</span>%):</span>
-                            <span>₹<span id="taxAmount">0.00</span></span>
-                        </div>
-                        <div class="summary-row total">
-                            <strong>Total:</strong>
-                            <strong>₹<span id="cartTotal">0.00</span></strong>
+                        <div class="filter-section">
+                            <select id="categoryFilter" class="category-select">
+                                <option value="">All Categories</option>
+                            </select>
+                            <div class="product-count">
+                                <span id="productCount">0</span> products
+                            </div>
                         </div>
                     </div>
-                    <div class="cart-actions">
-                        <button onclick="applyDiscount()">Apply Discount</button>
-                        <button onclick="clearCart()">Clear Cart</button>
-                        <button onclick="checkout()" class="checkout-btn">Checkout</button>
+
+                    <div class="product-grid-container">
+                        <div id="itemGrid" class="product-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Right Panel - Cart & Checkout -->
+                <div class="pos-right-panel">
+                    <!-- Cart Section -->
+                    <div class="cart-section">
+                        <div class="cart-header">
+                            <h3>🛍️ Shopping Cart</h3>
+                            <div class="cart-count">
+                                <span id="cartItemCount">0</span> items
+                            </div>
+                        </div>
+
+                        <div class="cart-items-container">
+                            <div id="cartList" class="cart-items-list">
+                                <div class="empty-cart">
+                                    <span class="empty-cart-icon">🛒</span>
+                                    <p>Your cart is empty</p>
+                                    <small>Add products to get started</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checkout Section -->
+                    <div class="checkout-section">
+                        <div class="tax-settings">
+                            <div class="tax-toggle">
+                                <label class="switch">
+                                    <input type="checkbox" id="gstEnabled" checked>
+                                    <span class="slider"></span>
+                                </label>
+                                <span class="tax-label">GST Enabled</span>
+                            </div>
+                            <div class="gst-rate-control">
+                                <span>GST Rate: <strong id="gstRateValue">18</strong>%</span>
+                                <input type="range" id="gstRate" min="0" max="30" value="18" class="gst-slider">
+                            </div>
+                        </div>
+
+                        <div class="order-summary">
+                            <div class="summary-item">
+                                <span>Subtotal</span>
+                                <span>₹<span id="subtotal">0.00</span></span>
+                            </div>
+                            <div class="summary-item discount-row">
+                                <span>Discount</span>
+                                <span>-₹<span id="discountAmount">0.00</span></span>
+                            </div>
+                            <div class="summary-item" id="taxRow">
+                                <span>GST (<span id="gstPercent">18</span>%)</span>
+                                <span>₹<span id="taxAmount">0.00</span></span>
+                            </div>
+                            <div class="summary-divider"></div>
+                            <div class="summary-item total-row">
+                                <span class="total-label">Total Amount</span>
+                                <span class="total-amount">₹<span id="cartTotal">0.00</span></span>
+                            </div>
+                        </div>
+
+                        <div class="checkout-actions">
+                            <button onclick="applyDiscount()" class="action-btn outline">
+                                <span>🏷️</span> Discount
+                            </button>
+                            <button onclick="clearCart()" class="action-btn danger">
+                                <span>🗑️</span> Clear Cart
+                            </button>
+                            <button onclick="checkout()" class="checkout-btn">
+                                <span>💳</span> Checkout
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -318,6 +389,7 @@
             <div class="payment-summary">
                 <p>Total: ₹<span id="paymentTotal">0.00</span></p>
                 <p>Paid: ₹<span id="paidAmount">0.00</span></p>
+                <p>Remaining: ₹<span id="remainingAmount">0.00</span></p>
                 <p>Change: ₹<span id="changeAmount">0.00</span></p>
             </div>
             <div class="payment-methods">
@@ -328,7 +400,12 @@
             </div>
             <div id="paymentInput">
                 <label>Amount: <input type="number" id="paymentAmount" step="0.01"></label>
-                <button onclick="processPayment()">Pay</button>
+                <button onclick="addPaymentMethod()">Add Payment</button>
+            </div>
+            <div id="splitPayments" style="display: none;">
+                <h4>Payment Breakdown</h4>
+                <div id="paymentBreakdown"></div>
+                <button onclick="completeSplitPayment()" class="checkout-btn">Complete Payment</button>
             </div>
         </div>
     </div>
