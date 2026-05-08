@@ -1,7 +1,7 @@
 {
-  "name": "POS & Inventory Management System",
-  "short_name": "POS System",
-  "description": "Complete Point of Sale and Inventory Management System with offline support",
+  "name": "WASEEM POS SOLUTIONS",
+  "short_name": "WASEEM POS",
+  "description": "WASEEM POS SOLUTIONS - Complete Point of Sale and Inventory Management System with offline support",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#667eea",

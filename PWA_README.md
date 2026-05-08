@@ -1,4 +1,4 @@
-# POS & Inventory Management System - PWA Updates
+# WASEEM POS SOLUTIONS - PWA Updates
 
 This app has been updated to work as a Progressive Web App (PWA) with offline functionality and install capability.
 

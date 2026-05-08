@@ -1,4 +1,4 @@
-# POS System - PWA Testing Guide
+# WASEEM POS SOLUTIONS - PWA Testing Guide
 
 ## Issues Fixed ✅
 
