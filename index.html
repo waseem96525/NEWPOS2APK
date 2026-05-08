@@ -23,6 +23,7 @@
             <button onclick="showSection('purchase')">Purchase</button>
             <button onclick="showSection('reports')">Reports</button>
             <button onclick="showSection('audit')">Audit</button>
+            <button onclick="showSection('devices')">Devices</button>
             <button onclick="showSettings()">Settings</button>
             <button id="installButton" onclick="installApp()" style="display: none;">Install App</button>
             <button onclick="logoutUser()">Logout</button>
@@ -49,6 +50,10 @@
                     <h3>Total Revenue</h3>
                     <p id="totalRevenue">₹0.00</p>
                 </div>
+            </div>
+            <div class="device-sales-section">
+                <h3>Sales by Device</h3>
+                <div id="deviceSalesTable"></div>
             </div>
         </section>
 
@@ -111,6 +116,10 @@
                         <div class="order-info">Order <strong>#<span id="orderNumber">001</span></strong></div>
                     </div>
                     <div class="pos-header-right">
+                        <div class="device-selector">
+                            <label>Device:</label>
+                            <select id="currentDeviceSelect" onchange="changeCurrentDevice()"></select>
+                        </div>
                         <div class="customer-info-compact">
                             <span class="customer-label">Customer:</span>
                             <span id="customerName" class="customer-name">Walk-in Customer</span>
@@ -293,6 +302,19 @@
                 <button onclick="exportAuditLog()">Export Audit Log</button>
             </div>
             <div id="auditContent"></div>
+        </section>
+
+        <section id="devices" class="section">
+            <h2>Device Management</h2>
+            <div class="device-management">
+                <div class="add-device-form">
+                    <input type="text" id="deviceName" placeholder="Device Name (e.g., POS 1)" required>
+                    <button onclick="addDevice()">Add Device</button>
+                </div>
+                <div id="deviceList" class="device-list">
+                    <!-- Devices will be listed here -->
+                </div>
+            </div>
         </section>
 
         <section id="reports" class="section">

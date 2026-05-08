@@ -27,6 +27,7 @@ const SETTINGS_KEY = 'pos_shop_settings';
 const SUPPLIERS_KEY = 'pos_suppliers';
 const PURCHASE_ORDERS_KEY = 'pos_purchase_orders';
 const AUDIT_LOG_KEY = 'pos_audit_log';
+const DEVICES_KEY = 'pos_devices';
 
 // Function to get user-specific key
 function getUserKey(baseKey) {
@@ -166,8 +167,10 @@ let suppliers = [];
 let purchaseOrders = [];
 let auditLog = [];
 let shopSettings = {};
+let devices = [];
 let currentCustomer = { name: 'Walk-in Customer' };
 let currentOrderNumber = 1;
+let currentDeviceId = null;
 let discount = 0;
 let discountType = 'percentage';
 let gstEnabled = true;
@@ -217,6 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize category filter
     updateCategoryFilter();
+
+    // Initialize device select
+    updateDeviceSelect();
 
     // POS Shortcut Key
     document.addEventListener('keydown', handlePOSShortcut);
@@ -379,7 +385,16 @@ function setupRealtimeData() {
         shopSettings = snapshot.val() || {};
     });
 
+    database.ref(getUserKey(DEVICES_KEY)).on('value', (snapshot) => {
+        devices = snapshot.val() || [];
+        renderDeviceList();
+        if (!currentDeviceId && devices.length > 0) {
+            currentDeviceId = devices[0].id;
+        }
+    });
+
     autoBackupEnabled = JSON.parse(localStorage.getItem('autoBackupEnabled')) || false;
+    currentDeviceId = localStorage.getItem('currentDeviceId') || null;
 }
 
     // Migrate old items to new structure
@@ -394,7 +409,9 @@ function saveData() {
     setData(PURCHASE_ORDERS_KEY, purchaseOrders);
     setData(AUDIT_LOG_KEY, auditLog);
     setData(SETTINGS_KEY, shopSettings);
+    setData(DEVICES_KEY, devices);
     localStorage.setItem('autoBackupEnabled', JSON.stringify(autoBackupEnabled));
+    localStorage.setItem('currentDeviceId', currentDeviceId);
 }
 
 // Inventory management
@@ -539,6 +556,52 @@ function updateDashboard() {
     document.getElementById('lowStock').textContent = lowStock;
     const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
     document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toFixed(2)}`;
+
+    renderDeviceSalesTable();
+}
+
+function renderDeviceSalesTable() {
+    const tableContainer = document.getElementById('deviceSalesTable');
+    if (devices.length === 0) {
+        tableContainer.innerHTML = '<p>No devices configured.</p>';
+        return;
+    }
+
+    let html = `
+        <table class="device-sales-table">
+            <thead>
+                <tr>
+                    <th>Device Name</th>
+                    <th>Total Sales</th>
+                    <th>Total Revenue</th>
+                    <th>Last Sale</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    devices.forEach(device => {
+        const deviceSales = sales.filter(sale => sale.deviceId === device.id);
+        const totalSales = deviceSales.length;
+        const totalRevenue = deviceSales.reduce((sum, sale) => sum + sale.total, 0);
+        const lastSale = deviceSales.length > 0 ? new Date(deviceSales[deviceSales.length - 1].date).toLocaleDateString() : 'N/A';
+
+        html += `
+            <tr>
+                <td>${device.name}</td>
+                <td>${totalSales}</td>
+                <td>₹${totalRevenue.toFixed(2)}</td>
+                <td>${lastSale}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    tableContainer.innerHTML = html;
 }
 
 // Inventory Stats
@@ -830,6 +893,7 @@ async function processPayment(method) {
         orderNumber: currentOrderNumber,
         date: new Date().toISOString(),
         customer: currentCustomer,
+        deviceId: currentDeviceId,
         items: cart.map(ci => {
             const item = items.find(i => i.id === ci.id);
             return {
@@ -2501,6 +2565,96 @@ function createConfetti() {
         confetti.style.left = Math.random() * 100 + '%';
         confetti.style.animationDelay = Math.random() * 1.5 + 's';
         sparklesContainer.appendChild(confetti);
+    }
+}
+
+// Device management
+function addDevice() {
+    const name = document.getElementById('deviceName').value.trim();
+    if (!name) {
+        alert('Please enter a device name.');
+        return;
+    }
+
+    const device = {
+        id: Date.now(),
+        name: name,
+        createdAt: new Date().toISOString()
+    };
+
+    devices.push(device);
+    saveData();
+    document.getElementById('deviceName').value = '';
+    renderDeviceList();
+    logAudit('device', `Device added: ${name}`);
+}
+
+function renderDeviceList() {
+    const deviceList = document.getElementById('deviceList');
+    deviceList.innerHTML = '';
+
+    devices.forEach(device => {
+        const isActive = currentDeviceId === device.id;
+        const div = document.createElement('div');
+        div.className = 'device-item';
+        div.innerHTML = `
+            <div class="device-info">
+                <div class="device-name">${device.name}</div>
+                <div class="device-status ${isActive ? 'active' : 'inactive'}">
+                    ${isActive ? 'Active' : 'Inactive'}
+                </div>
+            </div>
+            <div class="device-actions">
+                <button class="select-device-btn" onclick="selectDevice(${device.id})">
+                    ${isActive ? 'Selected' : 'Select'}
+                </button>
+                <button class="delete-device-btn" onclick="deleteDevice(${device.id})">Delete</button>
+            </div>
+        `;
+        deviceList.appendChild(div);
+    });
+
+    updateDeviceSelect();
+}
+
+function updateDeviceSelect() {
+    const select = document.getElementById('currentDeviceSelect');
+    if (!select) return;
+
+    select.innerHTML = '';
+    devices.forEach(device => {
+        const option = document.createElement('option');
+        option.value = device.id;
+        option.textContent = device.name;
+        if (currentDeviceId === device.id) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+function changeCurrentDevice() {
+    const select = document.getElementById('currentDeviceSelect');
+    const deviceId = parseInt(select.value);
+    selectDevice(deviceId);
+}
+
+function selectDevice(deviceId) {
+    currentDeviceId = deviceId;
+    saveData();
+    renderDeviceList();
+    logAudit('device', `Device selected: ${devices.find(d => d.id === deviceId)?.name}`);
+}
+
+function deleteDevice(deviceId) {
+    if (confirm('Are you sure you want to delete this device? This will not delete associated sales.')) {
+        devices = devices.filter(d => d.id !== deviceId);
+        if (currentDeviceId === deviceId) {
+            currentDeviceId = devices.length > 0 ? devices[0].id : null;
+        }
+        saveData();
+        renderDeviceList();
+        logAudit('device', `Device deleted: ${devices.find(d => d.id === deviceId)?.name}`);
     }
 }
 

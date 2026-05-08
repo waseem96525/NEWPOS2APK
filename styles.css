@@ -2347,3 +2347,166 @@ input:focus, select:focus {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
 }
+
+/* Device Management */
+.device-management {
+    padding: 1rem;
+}
+
+.add-device-form {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.add-device-form input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.add-device-form button {
+    padding: 0.5rem 1rem;
+    background: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.add-device-form button:hover {
+    background: #3182ce;
+}
+
+.device-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.device-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+}
+
+.device-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.device-name {
+    font-weight: 500;
+}
+
+.device-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.device-status.active {
+    background: #48bb78;
+    color: white;
+}
+
+.device-status.inactive {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.device-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.device-actions button {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.select-device-btn {
+    background: #4299e1;
+    color: white;
+}
+
+.select-device-btn:hover {
+    background: #3182ce;
+}
+
+.delete-device-btn {
+    background: #e53e3e;
+    color: white;
+}
+
+.delete-device-btn:hover {
+    background: #c53030;
+}
+
+/* Device Sales */
+.device-sales-section {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.device-sales-section h3 {
+    margin-bottom: 1rem;
+    color: #2d3748;
+}
+
+/* Device Selector */
+.device-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-right: 1rem;
+}
+
+.device-selector label {
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.device-selector select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+#deviceSalesTable {
+    overflow-x: auto;
+}
+
+.device-sales-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.device-sales-table th,
+.device-sales-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.device-sales-table th {
+    background: #f7fafc;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.device-sales-table tbody tr:hover {
+    background: #f7fafc;
+}
