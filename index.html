@@ -103,131 +103,145 @@
         </section>
 
         <section id="pos" class="section">
-            <!-- POS Header -->
-            <div class="pos-header-modern">
-                <div class="pos-title-section">
-                    <h2>🛒 Point of Sale</h2>
-                    <div class="order-badge">Order #<span id="orderNumber">001</span></div>
-                </div>
-                <div class="pos-actions">
-                    <button onclick="holdOrder()" class="action-btn secondary">
-                        <span>⏸️</span> Hold
-                    </button>
-                    <button onclick="recallOrder()" class="action-btn secondary">
-                        <span>▶️</span> Recall
-                    </button>
+            <!-- POS Header - Clean Corporate Style -->
+            <div class="pos-header-clean">
+                <div class="pos-header-content">
+                    <div class="pos-header-left">
+                        <h2>Point of Sale</h2>
+                        <div class="order-info">Order <strong>#<span id="orderNumber">001</span></strong></div>
+                    </div>
+                    <div class="pos-header-right">
+                        <div class="customer-info-compact">
+                            <span class="customer-label">Customer:</span>
+                            <span id="customerName" class="customer-name">Walk-in Customer</span>
+                            <button onclick="selectCustomer()" class="customer-change-btn">Change</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Customer Info Bar -->
-            <div class="customer-bar">
-                <div class="customer-display">
-                    <span class="customer-icon">👤</span>
-                    <span id="customerName">Walk-in Customer</span>
-                </div>
-                <button onclick="selectCustomer()" class="change-customer-btn">
-                    <span>🔄</span> Change Customer
+            <!-- Quick Actions Bar -->
+            <div class="pos-quick-actions">
+                <button onclick="holdOrder()" class="quick-action-btn">
+                    <i class="action-icon">⏸</i>
+                    <span>Hold Order</span>
+                </button>
+                <button onclick="recallOrder()" class="quick-action-btn">
+                    <i class="action-icon">▶</i>
+                    <span>Recall Order</span>
                 </button>
             </div>
 
-            <!-- Main POS Layout -->
-            <div class="pos-layout">
-                <!-- Left Panel - Product Catalog -->
-                <div class="pos-left-panel">
-                    <div class="search-section">
-                        <div class="search-inputs">
-                            <div class="search-group">
-                                <span class="search-icon">🔍</span>
-                                <input type="text" id="itemSearch" placeholder="Search products...">
+            <!-- POS Main Content -->
+            <div class="pos-main-content">
+                <!-- Products Section -->
+                <div class="products-section">
+                    <!-- Search and Filters -->
+                    <div class="products-toolbar">
+                        <div class="search-container">
+                            <div class="search-input-wrapper">
+                                <input type="text" id="itemSearch" placeholder="Search products..." class="search-input">
+                                <button class="search-clear-btn">×</button>
                             </div>
-                            <div class="search-group">
-                                <span class="barcode-icon">📱</span>
-                                <input type="text" id="barcodeInput" placeholder="Scan barcode...">
-                                <button onclick="scanBarcode()" class="scan-btn">Scan</button>
+                            <div class="barcode-input-wrapper">
+                                <input type="text" id="barcodeInput" placeholder="Barcode scan..." class="barcode-input">
+                                <button onclick="scanBarcode()" class="barcode-scan-btn">📱</button>
                             </div>
                         </div>
-                        <div class="filter-section">
-                            <select id="categoryFilter" class="category-select">
+                        <div class="filters-container">
+                            <select id="categoryFilter" class="category-filter">
                                 <option value="">All Categories</option>
                             </select>
-                            <div class="product-count">
-                                <span id="productCount">0</span> products
+                            <div class="products-stats">
+                                <span id="productCount">0</span> items available
                             </div>
                         </div>
                     </div>
 
-                    <div class="product-grid-container">
-                        <div id="itemGrid" class="product-grid"></div>
+                    <!-- Products Grid -->
+                    <div class="products-grid-wrapper">
+                        <div id="itemGrid" class="products-grid"></div>
                     </div>
                 </div>
 
-                <!-- Right Panel - Cart & Checkout -->
-                <div class="pos-right-panel">
-                    <!-- Cart Section -->
-                    <div class="cart-section">
-                        <div class="cart-header">
-                            <h3>🛍️ Shopping Cart</h3>
-                            <div class="cart-count">
-                                <span id="cartItemCount">0</span> items
-                            </div>
+                <!-- Cart & Checkout Section -->
+                <div class="cart-checkout-section">
+                    <!-- Cart Panel -->
+                    <div class="cart-panel">
+                        <div class="cart-panel-header">
+                            <h3>Current Order</h3>
+                            <div class="cart-item-count"><span id="cartItemCount">0</span></div>
                         </div>
 
-                        <div class="cart-items-container">
-                            <div id="cartList" class="cart-items-list">
-                                <div class="empty-cart">
-                                    <span class="empty-cart-icon">🛒</span>
-                                    <p>Your cart is empty</p>
-                                    <small>Add products to get started</small>
+                        <div class="cart-items-wrapper">
+                            <div id="cartList" class="cart-items">
+                                <div class="empty-cart-state">
+                                    <div class="empty-cart-icon">🛒</div>
+                                    <h4>No items in cart</h4>
+                                    <p>Add products from the catalog</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Checkout Section -->
-                    <div class="checkout-section">
-                        <div class="tax-settings">
-                            <div class="tax-toggle">
-                                <label class="switch">
-                                    <input type="checkbox" id="gstEnabled" checked>
-                                    <span class="slider"></span>
+                    <!-- Checkout Panel -->
+                    <div class="checkout-panel">
+                        <div class="checkout-header">
+                            <h4>Order Summary</h4>
+                        </div>
+
+                        <!-- Tax Settings -->
+                        <div class="tax-config-section">
+                            <div class="tax-config-item">
+                                <label class="config-label">
+                                    <input type="checkbox" id="gstEnabled" checked class="config-checkbox">
+                                    <span class="checkmark"></span>
+                                    Enable GST
                                 </label>
-                                <span class="tax-label">GST Enabled</span>
                             </div>
-                            <div class="gst-rate-control">
-                                <span>GST Rate: <strong id="gstRateValue">18</strong>%</span>
-                                <input type="range" id="gstRate" min="0" max="30" value="18" class="gst-slider">
+                            <div class="tax-config-item">
+                                <label class="config-label">GST Rate:</label>
+                                <div class="rate-control">
+                                    <input type="range" id="gstRate" min="0" max="30" value="18" class="rate-slider">
+                                    <span class="rate-value"><strong id="gstRateValue">18</strong>%</span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="order-summary">
-                            <div class="summary-item">
-                                <span>Subtotal</span>
-                                <span>₹<span id="subtotal">0.00</span></span>
+                        <!-- Order Totals -->
+                        <div class="order-totals">
+                            <div class="total-row">
+                                <span class="total-label">Subtotal</span>
+                                <span class="total-value">₹<span id="subtotal">0.00</span></span>
                             </div>
-                            <div class="summary-item discount-row">
+                            <div class="total-row discount">
+                                <span class="total-label">Discount</span>
+                                <span class="total-value">-₹<span id="discountAmount">0.00</span></span>
+                            </div>
+                            <div class="total-row" id="taxRow">
+                                <span class="total-label">GST (<span id="gstPercent">18</span>%)</span>
+                                <span class="total-value">₹<span id="taxAmount">0.00</span></span>
+                            </div>
+                            <div class="total-divider"></div>
+                            <div class="total-row grand-total">
+                                <span class="total-label">Total</span>
+                                <span class="total-value grand-amount">₹<span id="cartTotal">0.00</span></span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="checkout-actions-grid">
+                            <button onclick="applyDiscount()" class="checkout-action-btn discount-btn">
+                                <i>🏷</i>
                                 <span>Discount</span>
-                                <span>-₹<span id="discountAmount">0.00</span></span>
-                            </div>
-                            <div class="summary-item" id="taxRow">
-                                <span>GST (<span id="gstPercent">18</span>%)</span>
-                                <span>₹<span id="taxAmount">0.00</span></span>
-                            </div>
-                            <div class="summary-divider"></div>
-                            <div class="summary-item total-row">
-                                <span class="total-label">Total Amount</span>
-                                <span class="total-amount">₹<span id="cartTotal">0.00</span></span>
-                            </div>
-                        </div>
-
-                        <div class="checkout-actions">
-                            <button onclick="applyDiscount()" class="action-btn outline">
-                                <span>🏷️</span> Discount
                             </button>
-                            <button onclick="clearCart()" class="action-btn danger">
-                                <span>🗑️</span> Clear Cart
+                            <button onclick="clearCart()" class="checkout-action-btn clear-btn">
+                                <i>🗑</i>
+                                <span>Clear</span>
                             </button>
-                            <button onclick="checkout()" class="checkout-btn">
-                                <span>💳</span> Checkout
+                            <button onclick="checkout()" class="checkout-action-btn checkout-btn-primary">
+                                <i>💳</i>
+                                <span>Checkout</span>
                             </button>
                         </div>
                     </div>
@@ -541,6 +555,25 @@
             <button onclick="hideOfflineNotification()">×</button>
         </div>
     </div>
+
+    <!-- Checkout Success Animation Overlay -->
+    <div id="checkoutSuccessOverlay" class="checkout-success-overlay">
+        <div class="checkout-success-content">
+            <div class="success-checkmark"></div>
+            <div class="success-text">
+                <h2>Payment Successful!</h2>
+                <p>Order completed and receipt printed</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flying Cart Animation Container -->
+    <div id="flyingCartContainer" class="flying-cart-container" style="display: none;">
+        <div class="flying-cart"></div>
+    </div>
+
+    <!-- Sparkles/Confetti Container -->
+    <div id="sparklesContainer" class="sparkles-container" style="display: none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2/dist/email.min.js"></script>

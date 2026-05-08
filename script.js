@@ -600,10 +600,10 @@ function updateCart() {
 
     if (cart.length === 0) {
         cartList.innerHTML = `
-            <div class="empty-cart">
-                <span class="empty-cart-icon">🛒</span>
-                <p>Your cart is empty</p>
-                <small>Add products to get started</small>
+            <div class="empty-cart-state">
+                <div class="empty-cart-icon">🛒</div>
+                <h4>No items in cart</h4>
+                <p>Add products from the catalog</p>
             </div>
         `;
     } else {
@@ -615,15 +615,13 @@ function updateCart() {
                     <div class="item-name">${item.name}</div>
                     <div class="item-details">₹${cartItem.price.toFixed(2)} each</div>
                 </div>
-                <div class="item-controls">
-                    <div class="quantity-controls">
-                        <button class="qty-btn" onclick="changeQuantity(${cartIndex}, -1)">−</button>
-                        <span class="quantity">${cartItem.quantity}</span>
-                        <button class="qty-btn" onclick="changeQuantity(${cartIndex}, 1)">+</button>
-                    </div>
-                    <div class="item-total">₹${(cartItem.price * cartItem.quantity).toFixed(2)}</div>
-                    <button class="remove-btn" onclick="removeFromCart(${cartIndex})">×</button>
+                <div class="quantity-controls">
+                    <button class="qty-btn" onclick="changeQuantity(${cartIndex}, -1)">−</button>
+                    <span class="quantity">${cartItem.quantity}</span>
+                    <button class="qty-btn" onclick="changeQuantity(${cartIndex}, 1)">+</button>
                 </div>
+                <div class="item-total">₹${(cartItem.price * cartItem.quantity).toFixed(2)}</div>
+                <button class="remove-btn" onclick="removeFromCart(${cartIndex})">×</button>
             `;
             cartList.appendChild(li);
             subtotal += cartItem.price * cartItem.quantity;
@@ -861,7 +859,9 @@ async function processPayment(method) {
     closeModal();
     renderItemGrid(); // Update item grid to show reduced stock
     await logAudit('sale', `Sale completed: Order #${sale.orderNumber}, Total: ₹${sale.total.toFixed(2)}`);
-    alert('Sale completed!');
+
+    // Trigger success animations
+    showCheckoutSuccessAnimations();
 
     // Reset split payment state
     currentSplitPayments = [];
@@ -2436,6 +2436,72 @@ function completeSplitPayment() {
 
     // Process the split payment
     processPayment('split');
+}
+
+// Checkout Success Animations
+function showCheckoutSuccessAnimations() {
+    console.log('Starting checkout success animations');
+    // Get checkout button position for flying cart start point
+    const checkoutBtn = document.querySelector('.checkout-btn-primary');
+    if (!checkoutBtn) {
+        console.error('Checkout button not found');
+        return;
+    }
+    const btnRect = checkoutBtn.getBoundingClientRect();
+
+    // Position flying cart at checkout button
+    const flyingCartContainer = document.getElementById('flyingCartContainer');
+    flyingCartContainer.style.left = (btnRect.left + btnRect.width / 2 - 30) + 'px';
+    flyingCartContainer.style.top = (btnRect.top + btnRect.height / 2 - 30) + 'px';
+    flyingCartContainer.style.display = 'block';
+    console.log('Flying cart positioned at:', flyingCartContainer.style.left, flyingCartContainer.style.top);
+
+    // Create sparkles/confetti
+    createSparkles();
+    createConfetti();
+
+    // Show success overlay after a short delay
+    setTimeout(() => {
+        document.getElementById('checkoutSuccessOverlay').style.display = 'flex';
+    }, 500);
+
+    // Hide animations after completion
+    setTimeout(() => {
+        flyingCartContainer.style.display = 'none';
+        document.getElementById('checkoutSuccessOverlay').style.display = 'none';
+        document.getElementById('sparklesContainer').innerHTML = '';
+        document.getElementById('sparklesContainer').style.display = 'none';
+    }, 4000);
+}
+
+function createSparkles() {
+    console.log('Creating sparkles');
+    const sparklesContainer = document.getElementById('sparklesContainer');
+    sparklesContainer.style.display = 'block';
+    sparklesContainer.innerHTML = '';
+
+    // Create multiple sparkles
+    for (let i = 0; i < 50; i++) {
+        const sparkle = document.createElement('div');
+        sparkle.className = 'sparkle';
+        sparkle.style.left = Math.random() * 100 + '%';
+        sparkle.style.animationDelay = Math.random() * 2 + 's';
+        sparklesContainer.appendChild(sparkle);
+    }
+    console.log('Sparkles created:', sparklesContainer.children.length);
+}
+
+function createConfetti() {
+    const sparklesContainer = document.getElementById('sparklesContainer');
+
+    // Create confetti pieces
+    for (let i = 0; i < 30; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti-piece';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDelay = Math.random() * 1.5 + 's';
+        sparklesContainer.appendChild(confetti);
+    }
 }
 
 // PWA Install function
